@@ -8,7 +8,10 @@ import { assessRouter } from './routes/assess.js';
 export function createApp() {
   const app = express();
 
-  app.use(cors());
+  // Falls back to wide-open when CORS_ORIGIN is unset (local dev, same-origin
+  // deploys) — set CORS_ORIGIN to the deployed frontend's URL once frontend
+  // and backend live on separate domains.
+  app.use(cors(env.corsOrigin ? { origin: env.corsOrigin } : undefined));
   app.use(express.json({ limit: '2mb' }));
 
   app.get('/api/health', (_req, res) => {

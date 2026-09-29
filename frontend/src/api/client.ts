@@ -5,8 +5,16 @@ import type {
   RecheckResponse,
 } from '@lucida/shared';
 
+/**
+ * Empty by default — relative paths ('/api/assess') work as-is when frontend
+ * and backend share an origin (Vite's dev proxy, or a same-domain deploy).
+ * Set VITE_API_URL to the backend's URL once it's on a separate domain
+ * (e.g. the frontend on Vercel, the backend on Render).
+ */
+const API_BASE = import.meta.env.VITE_API_URL ?? '';
+
 async function post<TReq, TRes>(path: string, body: TReq): Promise<TRes> {
-  const response = await fetch(path, {
+  const response = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

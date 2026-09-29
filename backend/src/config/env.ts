@@ -129,6 +129,15 @@ export const env = {
   groqMaxTokens: Math.max(512, optionalInt('LUCIDA_GROQ_MAX_TOKENS', 4000)),
 
   port: optionalInt('PORT', 3001),
+
+  /**
+   * Restricts CORS to this origin (the deployed frontend's URL) once set.
+   * Unset by default so local dev and same-origin deploys (e.g. Vercel
+   * "Services" grouping) keep working without configuration — but once
+   * frontend and backend are on separate domains (e.g. Vercel + Render),
+   * this should be set to the frontend's real origin rather than left open.
+   */
+  corsOrigin: process.env.CORS_ORIGIN || undefined,
 } as const;
 
 export function assertConfigured(): void {

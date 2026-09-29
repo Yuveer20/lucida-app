@@ -1,0 +1,26 @@
+# Render Blueprint for the backend. Connect this repo on Render via
+# "New > Blueprint" and it pre-fills the service below instead of typing
+# build/start commands by hand.
+#
+# rootDir is deliberately omitted (stays at the repo root) — the backend
+# depends on the @lucida/shared workspace package, and Render hides
+# everything outside a service's rootDir from its build.
+services:
+  - name: lucida-backend
+    type: web
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build -w shared && npm run build -w backend
+    startCommand: npm run start -w backend
+    healthCheckPath: /api/health
+    envVars:
+      # sync: false = Render prompts for this once at creation and stores it
+      # securely; it is never committed or visible in this file.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      # Set this to the deployed frontend's URL (e.g. the Vercel domain)
+      # once it exists — until then CORS stays open, same as local dev.
+      - key: CORS_ORIGIN
+        sync: false
