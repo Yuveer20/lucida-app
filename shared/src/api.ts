@@ -1,32 +1,34 @@
-import type { LessonPlan, Chunk } from "./lesson.js";
-import type { AcademicTierId, LearningStyleId, PersonaResult } from "./persona.js";
-import type { ChunkHeatmapCell, Suggestion } from "./assessment.js";
+import type { Assessment, ConfidenceRange, RecheckResult } from './assessment.js';
+import type { Chunk } from './lesson.js';
 
 export interface AssessRequest {
-  rawText: string;
+  lessonText: string;
+  /** Optional context that sharpens chunking and agent calibration. */
+  gradeLevel?: string;
+  subject?: string;
 }
 
 export interface AssessResponse {
-  lessonPlan: LessonPlan;
-  chunks: Chunk[];
-  overallComprehensionRate: number;
-  tierBreakdown: Record<AcademicTierId, number>;
-  styleBreakdown: Record<LearningStyleId, number>;
-  heatmapByTier: ChunkHeatmapCell[];
-  heatmapByStyle: ChunkHeatmapCell[];
-  chunkDrillDowns: Record<string, PersonaResult[]>;
-  suggestions: Suggestion[];
-  partialFailures: string[];
+  assessment: Assessment;
 }
 
-export interface EchoRequest {
-  rawText: string;
+export interface RecheckRequest {
+  chunkId: string;
+  /** The chunk as originally submitted. */
+  original: Chunk;
+  /** The teacher's revised text for that chunk. */
+  revisedText: string;
+  /** Prior confidence, so the response can show a before/after. */
+  previousConfidence: ConfidenceRange;
+  /** Prior critiques, so the QA pass can detect stale repetition. */
+  previousCritiques: string[];
 }
 
-export interface EchoResponse {
-  raw: string;
+export interface RecheckResponse {
+  result: RecheckResult;
 }
 
 export interface ApiError {
   error: string;
+  detail?: string;
 }

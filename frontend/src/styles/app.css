@@ -1,0 +1,74 @@
+/*
+ * Layout rules that need real CSS (media queries, pseudo-classes) rather than
+ * inline styles. Everything here still reads from the design-system tokens.
+ */
+
+/* The chunk-by-chunk list on the results page — each row is a real <button>
+   (clicking opens the chunk drill-down). */
+.lucida-chunk-row:hover {
+  background: var(--paper-2);
+}
+
+/* The account-menu dropdown's "Log out" item. */
+.lucida-menu-item:hover {
+  background: var(--paper-2);
+}
+
+/* Both top-level screens reserve the top-right corner for the fixed
+   dark-mode toggle (~130px). On a phone that reservation eats most of the
+   available width from a nav row that has nowhere to wrap to — free it back
+   up and let the toggle sit below the header instead. */
+@media (max-width: 640px) {
+  .lucida-header-toggle-gutter {
+    padding-right: 24px !important;
+  }
+}
+
+.lucida-drift {
+  animation: lucida-drift 5s ease-in-out infinite;
+  display: none;
+}
+
+@media (min-width: 1020px) {
+  .lucida-drift {
+    display: block;
+  }
+}
+
+@keyframes lucida-drift {
+  0% {
+    transform: translate(0, 0) rotate(var(--r, 0deg));
+  }
+  50% {
+    transform: translate(6px, -10px) rotate(var(--r, 0deg));
+  }
+  100% {
+    transform: translate(0, 0) rotate(var(--r, 0deg));
+  }
+}
+
+.lucida-graph-bg {
+  animation: lucida-gridshift 10s linear infinite;
+}
+
+@keyframes lucida-gridshift {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 56px 56px;
+  }
+}
+
+@keyframes lucida-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lucida-drift,
+  .lucida-graph-bg {
+    animation: none;
+  }
+}

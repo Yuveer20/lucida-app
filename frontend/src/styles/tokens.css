@@ -1,0 +1,180 @@
+/*
+ * Lucida Design System — token layer.
+ *
+ * Ported verbatim from the Claude Design project `fe1bab0f` (tokens/fonts.css,
+ * colors.css, typography.css, spacing.css, base.css), flattened into one file.
+ * Values are the source of truth for the whole app; every component references
+ * these variables rather than literal colors or sizes.
+ *
+ * To resync after a design change, re-read those five files from the design
+ * project and replace the corresponding blocks below.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Work+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --font-display: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Work Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  /* base cool-neutral paper */
+  --paper-0: #f7f7f3;
+  --paper-1: #f2f1ea;
+  --paper-2: #e7e4d9;
+  --paper-3: #d9d5c6;
+  --line-1: #ccc6b4;
+  --line-2: #b6af97;
+  --ink-1: #22221f;
+  --ink-2: #454339;
+  --ink-3: #6e6b5d;
+  --ink-4: #96917e;
+
+  /* teacher (practical) accent — muted rust, desaturated */
+  --teacher-50: #f0e9e3;
+  --teacher-200: #cfaa8e;
+  --teacher-400: #a96a44;
+  --teacher-500: #95502f;
+  --teacher-600: #763e24;
+  --teacher-700: #59301c;
+
+  /* expert (research) accent — muted slate blue, desaturated */
+  --expert-50: #e6eaee;
+  --expert-200: #a6b7c4;
+  --expert-400: #3f6482;
+  --expert-500: #2c4c64;
+  --expert-600: #213c50;
+  --expert-700: #182d3c;
+
+  /* semantic */
+  --confidence-high: #3f7d4c;
+  --confidence-mid: #b98a2c;
+  --confidence-low: #b03a2e;
+  --confidence-high-bg: #eaf3eb;
+  --confidence-mid-bg: #fbf1de;
+  --confidence-low-bg: #f8e7e4;
+
+  /* surfaces */
+  --surface-page: var(--paper-1);
+  --surface-card: var(--paper-0);
+  --surface-sunken: var(--paper-2);
+  --surface-inverse: var(--ink-1);
+  --border-default: var(--line-1);
+  --border-strong: var(--line-2);
+
+  /* text */
+  --text-primary: var(--ink-1);
+  --text-secondary: var(--ink-2);
+  --text-tertiary: var(--ink-3);
+  --text-on-inverse: var(--paper-0);
+  --text-teacher: var(--teacher-600);
+  --text-expert: var(--expert-600);
+
+  /* interactive */
+  --action-primary: var(--ink-1);
+  --action-primary-hover: #453d34;
+  --action-primary-active: #1e1a16;
+  --focus-ring: var(--expert-500);
+
+  /* typography scale */
+  --text-display-xl: 600 56px/1.08 var(--font-display);
+  --text-display-lg: 600 38px/1.15 var(--font-display);
+  --text-display-md: 600 28px/1.22 var(--font-display);
+  --text-heading-lg: 600 22px/1.32 var(--font-display);
+  --text-heading-md: 600 17px/1.4 var(--font-display);
+  --text-body-lg: 400 18px/1.55 var(--font-body);
+  --text-body-md: 400 16px/1.55 var(--font-body);
+  --text-body-sm: 400 14px/1.5 var(--font-body);
+  --text-label: 500 13px/1.3 var(--font-body);
+  --text-eyebrow: 600 12px/1.2 var(--font-body);
+  --text-mono-sm: 500 12.5px/1.5 var(--font-mono);
+  --text-mono-xs: 500 11px/1.4 var(--font-mono);
+  --tracking-eyebrow: 0.08em;
+  --tracking-label: 0.02em;
+
+  /* spacing, radii, elevation, motion */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 56px;
+  --space-10: 72px;
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(43, 38, 34, 0.06), 0 2px 8px rgba(43, 38, 34, 0.06);
+  --shadow-raised: 0 4px 16px rgba(43, 38, 34, 0.12);
+  --shadow-inset-note: inset 2px 0 0 0 currentColor;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-md: 200ms;
+}
+
+[data-theme='dark'] {
+  --paper-0: #1b1c1e;
+  --paper-1: #212224;
+  --paper-2: #2b2c2f;
+  --paper-3: #393a3d;
+  --line-1: #3d3e41;
+  --line-2: #54555a;
+  --ink-1: #edede7;
+  --ink-2: #c4c2b8;
+  --ink-3: #8f8d83;
+  --ink-4: #66655f;
+
+  --teacher-50: #2e241d;
+  --teacher-200: #7a5138;
+  --teacher-400: #bd8055;
+  --teacher-500: #d3956b;
+  --teacher-600: #e2af8b;
+  --teacher-700: #efcbb0;
+
+  --expert-50: #1c262f;
+  --expert-200: #3e5a6e;
+  --expert-400: #6e93ac;
+  --expert-500: #89aac0;
+  --expert-600: #a6c1d2;
+  --expert-700: #c4d7e3;
+
+  --confidence-high: #6fbb80;
+  --confidence-mid: #d9b15b;
+  --confidence-low: #e08476;
+  --confidence-high-bg: #1e2b20;
+  --confidence-mid-bg: #2e2718;
+  --confidence-low-bg: #301e1b;
+
+  --action-primary: var(--paper-0);
+  --action-primary-hover: #d8d6cc;
+  --action-primary-active: #c4c2b8;
+  --text-on-inverse: var(--ink-1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font: var(--text-body-md);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--text-expert);
+}
+
+a:hover {
+  color: var(--expert-600);
+}
+
+::selection {
+  background: var(--teacher-200);
+}

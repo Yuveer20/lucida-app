@@ -1,19 +1,41 @@
-import express from "express";
-import cors from "cors";
-import { echoRouter } from "./routes/echo.js";
-import { assessRouter } from "./routes/assess.js";
+import express from 'express';
+import cors from 'cors';
+import { env, projectedCallCount } from './config/env.js';
+import { PERSONAS } from './config/personas.js';
+import { PRINCIPLES } from './config/principles.js';
+import { assessRouter } from './routes/assess.js';
 
 export function createApp() {
   const app = express();
-  app.use(cors());
-  app.use(express.json({ limit: "1mb" }));
 
-  app.get("/api/health", (_req, res) => {
-    res.json({ status: "ok" });
+  app.use(cors());
+  app.use(express.json({ limit: '2mb' }));
+
+  app.get('/api/health', (_req, res) => {
+    const configured = env.provider === 'groq' ? Boolean(env.groqApiKey) : Boolean(env.anthropicApiKey);
+    res.json({
+      ok: true,
+      provider: env.provider,
+      configured,
+      model: env.model,
+      studentModel: env.studentModel,
+      personas: PERSONAS.length,
+      principles: PRINCIPLES.length,
+      personasPerCall: env.personasPerCall,
+      studentPasses: env.studentPasses,
+      concurrency: env.concurrency,
+      // Rough call count for the current config, so a misconfigured
+      // .env shows up here before it shows up in a bill.
+      projectedCallsPerAssessment: projectedCallCount(PERSONAS.length),
+    });
   });
 
-  app.use("/api/echo", echoRouter);
-  app.use("/api/assess", assessRouter);
+  // Exposed so the frontend can render persona detail and principle sources
+  // without duplicating the registries.
+  app.get('/api/personas', (_req, res) => res.json({ personas: PERSONAS }));
+  app.get('/api/principles', (_req, res) => res.json({ principles: PRINCIPLES }));
+
+  app.use('/api', assessRouter);
 
   return app;
 }
