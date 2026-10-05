@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import { env, projectedCallCount } from './config/env.js';
 import { PERSONAS } from './config/personas.js';
 import { PRINCIPLES } from './config/principles.js';
@@ -7,6 +8,14 @@ import { assessRouter } from './routes/assess.js';
 
 export function createApp() {
   const app = express();
+
+  // Render (and most PaaS hosts) sit behind a reverse proxy — without this,
+  // every request looks like it comes from the proxy's IP, which would make
+  // IP-based rate limiting (routes/assess.ts) useless. 1 = trust exactly one
+  // hop, matching a single reverse proxy in front of the app.
+  app.set('trust proxy', 1);
+
+  app.use(helmet());
 
   // Falls back to wide-open when CORS_ORIGIN is unset (local dev, same-origin
   // deploys) — set CORS_ORIGIN to the deployed frontend's URL once frontend

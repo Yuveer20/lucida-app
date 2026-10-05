@@ -138,6 +138,17 @@ export const env = {
    * this should be set to the frontend's real origin rather than left open.
    */
   corsOrigin: process.env.CORS_ORIGIN || undefined,
+
+  /**
+   * IP-based cap on /api/assess and /api/recheck — the only endpoints that
+   * trigger real, billed LLM calls. A single assessment is already ~20+
+   * calls, so this bounds worst-case spend from one source, not just request
+   * volume. Deliberately tight defaults; raise them once real usage patterns
+   * are known rather than guessing generous ones up front.
+   */
+  rateLimitWindowMinutes: Math.max(1, optionalInt('LUCIDA_RATE_LIMIT_WINDOW_MIN', 15)),
+  rateLimitMaxAssess: Math.max(1, optionalInt('LUCIDA_RATE_LIMIT_MAX_ASSESS', 5)),
+  rateLimitMaxRecheck: Math.max(1, optionalInt('LUCIDA_RATE_LIMIT_MAX_RECHECK', 15)),
 } as const;
 
 export function assertConfigured(): void {

@@ -4,6 +4,7 @@ import type {
   RecheckRequest,
   RecheckResponse,
 } from '@lucida/shared';
+import { auth } from '../lib/firebase.js';
 
 /**
  * Empty by default — relative paths ('/api/assess') work as-is when frontend
@@ -14,9 +15,20 @@ import type {
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
 async function post<TReq, TRes>(path: string, body: TReq): Promise<TRes> {
+  // The backend verifies this token on every protected route — a stale/
+  // expired cached token would just get a 401 back, not a silent failure,
+  // so forcing a refresh here isn't necessary for correctness.
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) {
+    throw new Error('You need to be signed in to do this.');
+  }
+
   const response = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(body),
   });
 
