@@ -32,3 +32,12 @@ export interface ApiError {
   error: string;
   detail?: string;
 }
+
+/**
+ * Upload limits for /api/extract-text — a single source of truth so the
+ * frontend's pre-check, its displayed note, and the backend's actual
+ * enforcement can't drift apart (see backend/src/config/limits.ts).
+ */
+export const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15 MB
+export const MAX_PDF_PAGES = 40;
+export const MAX_SLIDES = 40;

@@ -5,6 +5,7 @@ import { env, projectedCallCount } from './config/env.js';
 import { PERSONAS } from './config/personas.js';
 import { PRINCIPLES } from './config/principles.js';
 import { assessRouter } from './routes/assess.js';
+import { extractRouter } from './routes/extract.js';
 
 export function createApp() {
   const app = express();
@@ -48,6 +49,7 @@ export function createApp() {
   app.get('/api/principles', (_req, res) => res.json({ principles: PRINCIPLES }));
 
   app.use('/api', assessRouter);
+  app.use('/api', extractRouter);
 
   return app;
 }

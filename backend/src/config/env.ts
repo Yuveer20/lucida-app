@@ -149,6 +149,8 @@ export const env = {
   rateLimitWindowMinutes: Math.max(1, optionalInt('LUCIDA_RATE_LIMIT_WINDOW_MIN', 15)),
   rateLimitMaxAssess: Math.max(1, optionalInt('LUCIDA_RATE_LIMIT_MAX_ASSESS', 5)),
   rateLimitMaxRecheck: Math.max(1, optionalInt('LUCIDA_RATE_LIMIT_MAX_RECHECK', 15)),
+  // Local parsing, not a billed LLM call — more generous than assess/recheck.
+  rateLimitMaxExtract: Math.max(1, optionalInt('LUCIDA_RATE_LIMIT_MAX_EXTRACT', 30)),
 } as const;
 
 export function assertConfigured(): void {

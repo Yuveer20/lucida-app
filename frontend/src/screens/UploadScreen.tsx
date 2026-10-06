@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { MAX_PDF_PAGES, MAX_SLIDES, MAX_UPLOAD_BYTES } from '@lucida/shared';
 import { Button } from '../ds/index.js';
+import { extractText } from '../api/client.js';
+
+const MAX_UPLOAD_MB = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
 
 /**
  * Ported from the design system's UploadScreen.jsx. The ghost margin notes are
@@ -51,7 +55,38 @@ export function UploadScreen({
   const [gradeLevel, setGradeLevel] = useState('');
   const [focused, setFocused] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadNote, setUploadNote] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // reset so selecting the same file again still fires onChange
+    if (!file) return;
+
+    setUploadNote(null);
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setUploadError(`File is too large (limit ${MAX_UPLOAD_MB}MB).`);
+      return;
+    }
+
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const result = await extractText(file);
+      setText(result.text);
+      const unit = result.format === 'pdf' ? 'page' : 'slide';
+      setUploadNote(
+        `Extracted ${result.count} ${unit}${result.count === 1 ? '' : 's'} from "${file.name}" — review the text below before running the assessment.`,
+      );
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Could not read this file.');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -308,6 +343,34 @@ export function UploadScreen({
               onChange={(e) => setGradeLevel(e.target.value)}
             />
           </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+              onChange={handleFileSelect}
+              style={{ display: 'none' }}
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {uploading ? 'Reading file…' : 'Or upload a PDF / PowerPoint'}
+            </Button>
+            <span style={{ font: 'var(--text-mono-xs)', color: 'var(--text-tertiary)' }}>
+              Up to {MAX_UPLOAD_MB}MB, {MAX_PDF_PAGES} pages / {MAX_SLIDES} slides
+            </span>
+          </div>
+
+          {uploadError && (
+            <p style={{ font: 'var(--text-body-sm)', color: 'var(--confidence-low)', margin: 0 }}>{uploadError}</p>
+          )}
+          {uploadNote && (
+            <p style={{ font: 'var(--text-body-sm)', color: 'var(--text-secondary)', margin: 0 }}>{uploadNote}</p>
+          )}
 
           <div
             style={{

@@ -6,11 +6,9 @@ import { assessLesson } from '../pipeline/assess.js';
 import { recheckChunk } from '../pipeline/recheck.js';
 import { RefusalError } from '../llm/client.js';
 import { requireAuth } from '../middleware/auth.js';
+import { MAX_LESSON_CHARS } from '../config/limits.js';
 
 export const assessRouter = Router();
-
-/** Lesson plans can be long; the default 100kb body limit is not enough. */
-const MAX_LESSON_CHARS = 120_000;
 
 const windowMs = env.rateLimitWindowMinutes * 60_000;
 

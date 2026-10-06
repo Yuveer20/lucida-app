@@ -14,14 +14,30 @@ import { auth } from '../lib/firebase.js';
  */
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
-async function post<TReq, TRes>(path: string, body: TReq): Promise<TRes> {
-  // The backend verifies this token on every protected route — a stale/
-  // expired cached token would just get a 401 back, not a silent failure,
-  // so forcing a refresh here isn't necessary for correctness.
+// The backend verifies this token on every protected route — a stale/expired
+// cached token would just get a 401 back, not a silent failure, so forcing a
+// refresh here isn't necessary for correctness.
+async function getToken(): Promise<string> {
   const token = await auth.currentUser?.getIdToken();
   if (!token) {
     throw new Error('You need to be signed in to do this.');
   }
+  return token;
+}
+
+async function parseErrorResponse(response: Response): Promise<never> {
+  let detail = `${response.status} ${response.statusText}`;
+  try {
+    const payload = (await response.json()) as { error?: string; detail?: string };
+    detail = [payload.error, payload.detail].filter(Boolean).join(' — ') || detail;
+  } catch {
+    // response had no JSON body; keep the status line
+  }
+  throw new Error(detail);
+}
+
+async function post<TReq, TRes>(path: string, body: TReq): Promise<TRes> {
+  const token = await getToken();
 
   const response = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
@@ -33,14 +49,7 @@ async function post<TReq, TRes>(path: string, body: TReq): Promise<TRes> {
   });
 
   if (!response.ok) {
-    let detail = `${response.status} ${response.statusText}`;
-    try {
-      const payload = (await response.json()) as { error?: string; detail?: string };
-      detail = [payload.error, payload.detail].filter(Boolean).join(' — ') || detail;
-    } catch {
-      // response had no JSON body; keep the status line
-    }
-    throw new Error(detail);
+    return parseErrorResponse(response);
   }
 
   return (await response.json()) as TRes;
@@ -52,4 +61,30 @@ export function assess(req: AssessRequest): Promise<AssessResponse> {
 
 export function recheck(req: RecheckRequest): Promise<RecheckResponse> {
   return post<RecheckRequest, RecheckResponse>('/api/recheck', req);
+}
+
+export interface ExtractTextResponse {
+  text: string;
+  count: number;
+  format: 'pdf' | 'pptx';
+}
+
+/** Uploads a PDF or .pptx for server-side text extraction — does not run an assessment. */
+export async function extractText(file: File): Promise<ExtractTextResponse> {
+  const token = await getToken();
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE}/api/extract-text`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    return parseErrorResponse(response);
+  }
+
+  return (await response.json()) as ExtractTextResponse;
 }
