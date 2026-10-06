@@ -360,7 +360,7 @@ export function UploadScreen({
             >
               {uploading ? 'Reading file…' : 'Or upload a PDF / PowerPoint'}
             </Button>
-            <span style={{ font: 'var(--text-mono-xs)', color: 'var(--text-tertiary)' }}>
+            <span style={{ font: 'var(--text-body-sm)', color: 'var(--text-tertiary)' }}>
               Up to {MAX_UPLOAD_MB}MB, {MAX_PDF_PAGES} pages / {MAX_SLIDES} slides
             </span>
           </div>
