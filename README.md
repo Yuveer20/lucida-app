@@ -40,6 +40,17 @@ model is Sonnet 5, not Opus — near-Opus quality on this kind of structured tas
 half the price, and cost matters more here than on a typical assistant because every
 Student Agent call pays it again.
 
+**Cost protection, in layers:** `/api/assess` and `/api/recheck` require a verified Firebase
+sign-in (`FIREBASE_SERVICE_ACCOUNT` — see `.env.example`); a per-account rate limit
+(`LUCIDA_RATE_LIMIT_MAX_ASSESS`, default 5/15min); and a global limit shared across every
+account combined (`LUCIDA_GLOBAL_DAILY_MAX_ASSESS`, default 80/day), so creating several
+accounts doesn't multiply the quota. The global limit is in-memory and resets on a
+redeploy — it is not a hard platform guarantee. **For an actual unbypassable ceiling,
+set a spend limit in the Anthropic Console**: platform.claude.com → Workspaces → the
+workspace this app's API key belongs to → **Limits** tab → **Change Limit**. That's
+enforced by Anthropic itself regardless of anything in this app's code, and is worth
+doing once regardless of how the app-level limits above are tuned.
+
 ## Layout
 
 | Path | What it is |

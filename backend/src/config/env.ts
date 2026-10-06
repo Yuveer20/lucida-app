@@ -140,7 +140,7 @@ export const env = {
   corsOrigin: process.env.CORS_ORIGIN || undefined,
 
   /**
-   * IP-based cap on /api/assess and /api/recheck — the only endpoints that
+   * Per-uid cap on /api/assess and /api/recheck — the only endpoints that
    * trigger real, billed LLM calls. A single assessment is already ~20+
    * calls, so this bounds worst-case spend from one source, not just request
    * volume. Deliberately tight defaults; raise them once real usage patterns
@@ -151,6 +151,20 @@ export const env = {
   rateLimitMaxRecheck: Math.max(1, optionalInt('LUCIDA_RATE_LIMIT_MAX_RECHECK', 15)),
   // Local parsing, not a billed LLM call — more generous than assess/recheck.
   rateLimitMaxExtract: Math.max(1, optionalInt('LUCIDA_RATE_LIMIT_MAX_EXTRACT', 30)),
+
+  /**
+   * Global (not per-uid) 24h cap, shared across every signed-in account —
+   * the per-uid limits above reset per account, so someone willing to create
+   * several free Google accounts could otherwise multiply their quota. This
+   * is the ceiling that holds regardless of account count. In-memory, so it
+   * resets on a redeploy/restart — a known gap, not a hard platform-level
+   * guarantee (see the Anthropic Console spend limit note in README).
+   * Defaults sized around the app's own real per-assessment cost estimate
+   * (~$0.15-0.60): 80/day assess is a worst-case ceiling in the tens of
+   * dollars/day, not hundreds.
+   */
+  globalDailyMaxAssess: Math.max(1, optionalInt('LUCIDA_GLOBAL_DAILY_MAX_ASSESS', 80)),
+  globalDailyMaxRecheck: Math.max(1, optionalInt('LUCIDA_GLOBAL_DAILY_MAX_RECHECK', 240)),
 } as const;
 
 export function assertConfigured(): void {

@@ -38,7 +38,32 @@ const recheckLimiter = rateLimit({
   message: { error: 'Too many recheck requests. Please wait a while before trying again.' },
 });
 
-assessRouter.post('/assess', requireAuth, assessLimiter, async (req, res) => {
+const dayMs = 24 * 60 * 60_000;
+// Same key for every request — a hard ceiling on total spend regardless of
+// how many accounts it's spread across, layered on top of the per-uid limit
+// above rather than replacing it (one account spamming still hits its own
+// limit first; many accounts together still hit this one).
+const globalKey = () => 'global';
+
+const globalAssessLimiter = rateLimit({
+  windowMs: dayMs,
+  limit: env.globalDailyMaxAssess,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: globalKey,
+  message: { error: 'This app has hit its daily assessment limit across all users. Please try again tomorrow.' },
+});
+
+const globalRecheckLimiter = rateLimit({
+  windowMs: dayMs,
+  limit: env.globalDailyMaxRecheck,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: globalKey,
+  message: { error: 'This app has hit its daily recheck limit across all users. Please try again tomorrow.' },
+});
+
+assessRouter.post('/assess', requireAuth, globalAssessLimiter, assessLimiter, async (req, res) => {
   const body = req.body as Partial<AssessRequest>;
 
   if (typeof body?.lessonText !== 'string' || !body.lessonText.trim()) {
@@ -63,7 +88,7 @@ assessRouter.post('/assess', requireAuth, assessLimiter, async (req, res) => {
   }
 });
 
-assessRouter.post('/recheck', requireAuth, recheckLimiter, async (req, res) => {
+assessRouter.post('/recheck', requireAuth, globalRecheckLimiter, recheckLimiter, async (req, res) => {
   const body = req.body as Partial<RecheckRequest>;
 
   if (!body?.chunkId || !body.original || typeof body.revisedText !== 'string') {
