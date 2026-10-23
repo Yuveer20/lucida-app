@@ -77,6 +77,7 @@ export function ChunkDrilldown({
 
   return (
     <div
+      data-lucida-overlay
       style={{
         position: 'fixed',
         inset: 0,

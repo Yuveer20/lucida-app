@@ -14,3 +14,15 @@ export interface LessonPlan {
   createdAt: string;
   chunks: Chunk[];
 }
+
+/**
+ * The uploaded file a lesson came from, split back into its pages/slides so
+ * the results can be shown slide by slide. Only the extracted text is kept
+ * — the original file is never stored.
+ */
+export interface LessonSource {
+  format: 'pdf' | 'pptx';
+  fileName: string;
+  /** Extracted text of each page (PDF) or slide (PPTX), in order. */
+  pages: string[];
+}

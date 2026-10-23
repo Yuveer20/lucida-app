@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Assessment, ChunkBreakdown } from '@lucida/shared';
 import {
   CHUNK_STATUS_BG,
@@ -7,7 +8,9 @@ import {
   GradeStamp,
   HeadlineRecommendation,
   RubricScorecard,
+  Tabs,
 } from '../ds/index.js';
+import { SlideView } from './SlideView.js';
 
 const eyebrow = {
   font: 'var(--text-eyebrow)',
@@ -35,15 +38,24 @@ function struggledGroups(chunkId: string, dimensionBreakdowns: Assessment['dimen
   return labels;
 }
 
+const CHUNK_TAB = 'Chunk by chunk';
+
 export function ResultsScreen({
   assessment,
+  pdfFile,
   onOpenChunk,
   onReset,
 }: {
   assessment: Assessment;
+  /** The uploaded PDF, when still in memory from this session — lets the slide view draw real pages. */
+  pdfFile: File | null;
   onOpenChunk: (breakdown: ChunkBreakdown) => void;
   onReset: () => void;
 }) {
+  const hasSlides = (assessment.source?.pages.length ?? 0) > 0;
+  const slideTab = assessment.source?.format === 'pdf' ? 'Page view' : 'Slide view';
+  const [view, setView] = useState(hasSlides ? slideTab : CHUNK_TAB);
+
   return (
     <div style={{ padding: '0 24px 90px' }}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
@@ -124,83 +136,95 @@ export function ResultsScreen({
           </div>
         </div>
 
-        <div style={{ ...eyebrow, marginBottom: 14 }}>Chunk by chunk — tap any row for the full read</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {assessment.chunkBreakdowns.map((b) => {
-            const tone = b.confidence.tone;
-            const flagged = tone !== 'high';
-            const reason = flagged ? chunkReason(b) : null;
-            const struggled = flagged ? struggledGroups(b.chunk.id, assessment.dimensionBreakdowns) : [];
+        {hasSlides && (
+          <div style={{ marginBottom: 20 }}>
+            <Tabs tabs={[slideTab, CHUNK_TAB]} active={view} onChange={setView} />
+          </div>
+        )}
 
-            return (
-              <button
-                key={b.chunk.id}
-                onClick={() => onOpenChunk(b)}
-                className="lucida-chunk-row"
-                style={{
-                  textAlign: 'left',
-                  width: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 6,
-                  background: 'var(--surface-card)',
-                  border: '1px solid var(--border-default)',
-                  borderLeft: `4px solid ${CHUNK_STATUS_COLOR[tone]}`,
-                  borderRadius: 'var(--radius-md)',
-                  padding: '14px 16px',
-                  cursor: 'pointer',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        fontFamily: 'var(--font-display)',
-                        fontWeight: 700,
-                        fontSize: 10,
-                        letterSpacing: '0.05em',
-                        textTransform: 'uppercase',
-                        color: CHUNK_STATUS_COLOR[tone],
-                        background: CHUNK_STATUS_BG[tone],
-                        padding: '3px 9px',
-                        borderRadius: 'var(--radius-pill)',
-                      }}
-                    >
-                      {CHUNK_STATUS_LABEL[tone]}
-                    </span>
-                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>
-                      {b.chunk.order + 1} · {b.chunk.label}
-                    </span>
-                  </div>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-tertiary)', flexShrink: 0 }}>
-                    View full detail →
-                  </span>
-                </div>
-                {reason && (
-                  <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
-                    {reason}
-                  </p>
-                )}
-                {struggled.length > 0 && (
-                  <p
+        {view === slideTab ? (
+          <SlideView assessment={assessment} pdfFile={pdfFile} onOpenChunk={onOpenChunk} />
+        ) : (
+          <>
+            <div style={{ ...eyebrow, marginBottom: 14 }}>Chunk by chunk — tap any row for the full read</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {assessment.chunkBreakdowns.map((b) => {
+                const tone = b.confidence.tone;
+                const flagged = tone !== 'high';
+                const reason = flagged ? chunkReason(b) : null;
+                const struggled = flagged ? struggledGroups(b.chunk.id, assessment.dimensionBreakdowns) : [];
+
+                return (
+                  <button
+                    key={b.chunk.id}
+                    onClick={() => onOpenChunk(b)}
+                    className="lucida-chunk-row"
                     style={{
-                      margin: 0,
-                      fontFamily: 'var(--font-body)',
-                      fontSize: 12.5,
-                      lineHeight: 1.5,
-                      color: 'var(--text-tertiary)',
-                      fontStyle: 'italic',
+                      textAlign: 'left',
+                      width: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 6,
+                      background: 'var(--surface-card)',
+                      border: '1px solid var(--border-default)',
+                      borderLeft: `4px solid ${CHUNK_STATUS_COLOR[tone]}`,
+                      borderRadius: 'var(--radius-md)',
+                      padding: '14px 16px',
+                      cursor: 'pointer',
                     }}
                   >
-                    Struggled most: {struggled.join(', ')}.
-                  </p>
-                )}
-              </button>
-            );
-          })}
-        </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            fontFamily: 'var(--font-display)',
+                            fontWeight: 700,
+                            fontSize: 10,
+                            letterSpacing: '0.05em',
+                            textTransform: 'uppercase',
+                            color: CHUNK_STATUS_COLOR[tone],
+                            background: CHUNK_STATUS_BG[tone],
+                            padding: '3px 9px',
+                            borderRadius: 'var(--radius-pill)',
+                          }}
+                        >
+                          {CHUNK_STATUS_LABEL[tone]}
+                        </span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 15, color: 'var(--text-primary)' }}>
+                          {b.chunk.order + 1} · {b.chunk.label}
+                        </span>
+                      </div>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-tertiary)', flexShrink: 0 }}>
+                        View full detail →
+                      </span>
+                    </div>
+                    {reason && (
+                      <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                        {reason}
+                      </p>
+                    )}
+                    {struggled.length > 0 && (
+                      <p
+                        style={{
+                          margin: 0,
+                          fontFamily: 'var(--font-body)',
+                          fontSize: 12.5,
+                          lineHeight: 1.5,
+                          color: 'var(--text-tertiary)',
+                          fontStyle: 'italic',
+                        }}
+                      >
+                        Struggled most: {struggled.join(', ')}.
+                      </p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

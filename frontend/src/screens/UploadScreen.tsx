@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { MAX_PDF_PAGES, MAX_SLIDES, MAX_UPLOAD_BYTES } from '@lucida/shared';
+import type { LessonSource } from '@lucida/shared';
 import { Button } from '../ds/index.js';
 import { extractText } from '../api/client.js';
 
@@ -37,6 +38,17 @@ const MARGIN_NOTES = [
   { side: 'right', top: '82%', rot: -2, color: 'var(--expert-500)', tag: 'Retrieval Practice', note: 'spacing beats repetition' },
 ] as const;
 
+/**
+ * True if the textarea still mostly holds the uploaded file's text. Light
+ * edits are fine; if the teacher pasted a different lesson over it, the
+ * file's slides no longer describe what's being assessed.
+ */
+function stillFromUpload(text: string, source: LessonSource): boolean {
+  const have = new Set(text.toLowerCase().split(/\W+/));
+  const want = source.pages.join(' ').toLowerCase().split(/\W+/).filter((w) => w.length > 3);
+  return want.length > 0 && want.filter((w) => have.has(w)).length / want.length >= 0.5;
+}
+
 export function UploadScreen({
   onSubmit,
   error,
@@ -44,7 +56,11 @@ export function UploadScreen({
   onShowHistory,
   onSignOut,
 }: {
-  onSubmit: (text: string, meta: { subject: string; gradeLevel: string }) => void;
+  onSubmit: (
+    text: string,
+    meta: { subject: string; gradeLevel: string },
+    upload: { source: LessonSource; file: File } | null,
+  ) => void;
   error?: string | null;
   user: { name: string | null; email: string | null; photoURL: string | null };
   onShowHistory: () => void;
@@ -58,6 +74,9 @@ export function UploadScreen({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadNote, setUploadNote] = useState<string | null>(null);
+  // The file behind the current text, so results can be shown slide by slide.
+  // Dropped once the textarea is emptied — the text is no longer from it.
+  const [upload, setUpload] = useState<{ source: LessonSource; file: File } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,6 +96,7 @@ export function UploadScreen({
     try {
       const result = await extractText(file);
       setText(result.text);
+      setUpload({ source: { format: result.format, fileName: file.name, pages: result.pages }, file });
       const unit = result.format === 'pdf' ? 'page' : 'slide';
       setUploadNote(
         `Extracted ${result.count} ${unit}${result.count === 1 ? '' : 's'} from "${file.name}" — review the text below before running the assessment.`,
@@ -386,7 +406,10 @@ export function UploadScreen({
               rows={14}
               placeholder="Paste your lesson plan..."
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                if (!e.target.value.trim()) setUpload(null);
+              }}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               style={{
@@ -430,7 +453,7 @@ export function UploadScreen({
               variant="primary"
               size="lg"
               disabled={!text.trim()}
-              onClick={() => onSubmit(text, { subject, gradeLevel })}
+              onClick={() => onSubmit(text, { subject, gradeLevel }, upload && stillFromUpload(text, upload.source) ? upload : null)}
             >
               Run assessment
             </Button>

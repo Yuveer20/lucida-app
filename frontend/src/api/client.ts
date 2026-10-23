@@ -67,6 +67,8 @@ export interface ExtractTextResponse {
   text: string;
   count: number;
   format: 'pdf' | 'pptx';
+  /** Text of each page/slide, for the results' slide view. */
+  pages: string[];
 }
 
 /** Uploads a PDF or .pptx for server-side text extraction — does not run an assessment. */

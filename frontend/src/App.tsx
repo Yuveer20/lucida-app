@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { signOut } from 'firebase/auth';
-import type { Assessment, ChunkBreakdown } from '@lucida/shared';
+import type { Assessment, ChunkBreakdown, LessonSource } from '@lucida/shared';
 import { assess } from './api/client.js';
 import { auth } from './lib/firebase.js';
 import { deleteAssessment, listAssessments, saveAssessment } from './lib/history.js';
@@ -23,6 +23,9 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [dark, setDark] = useState(false);
   const [historyItems, setHistoryItems] = useState<Assessment[] | null>(null);
+  // The uploaded PDF, kept in memory only (never stored) so the slide view
+  // can draw real pages for the assessment it produced.
+  const [pdf, setPdf] = useState<{ assessmentId: string; file: File } | null>(null);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
@@ -36,10 +39,15 @@ export function App() {
       setOpenChunk(null);
       setError(null);
       setHistoryItems(null);
+      setPdf(null);
     }
   }, [user]);
 
-  async function handleSubmit(text: string, meta: { subject: string; gradeLevel: string }) {
+  async function handleSubmit(
+    text: string,
+    meta: { subject: string; gradeLevel: string },
+    upload: { source: LessonSource; file: File } | null,
+  ) {
     setStage('processing');
     setError(null);
     try {
@@ -48,10 +56,12 @@ export function App() {
         subject: meta.subject || undefined,
         gradeLevel: meta.gradeLevel || undefined,
       });
-      setAssessment(response.assessment);
+      const result: Assessment = upload ? { ...response.assessment, source: upload.source } : response.assessment;
+      setAssessment(result);
+      setPdf(upload?.source.format === 'pdf' ? { assessmentId: result.id, file: upload.file } : null);
       setStage('results');
       if (user) {
-        saveAssessment(user.uid, response.assessment).catch((err) => {
+        saveAssessment(user.uid, result).catch((err) => {
           console.error('Failed to save assessment to history', err);
         });
       }
@@ -133,7 +143,13 @@ export function App() {
       )}
       {stage === 'processing' && <ProcessingScreen />}
       {stage === 'results' && assessment && (
-        <ResultsScreen assessment={assessment} onOpenChunk={setOpenChunk} onReset={reset} />
+        <ResultsScreen
+          key={assessment.id}
+          assessment={assessment}
+          pdfFile={pdf?.assessmentId === assessment.id ? pdf.file : null}
+          onOpenChunk={setOpenChunk}
+          onReset={reset}
+        />
       )}
       {stage === 'history' && (
         <HistoryScreen

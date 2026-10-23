@@ -29,13 +29,28 @@ const extractLimiter = rateLimit({
   message: { error: 'Too many file uploads. Please wait a while before trying again.' },
 });
 
-const xmlParser = new XMLParser();
+// Keep text runs exactly as written: runs are concatenated directly, so
+// trimming would glue words together ("Hello " + "world"), and numeric
+// coercion would drop runs like "2024" or turn "007" into 7.
+const xmlParser = new XMLParser({ trimValues: false, parseTagValue: false });
 
-/** Walks a parsed slide XML tree collecting every <a:t> text-run value, regardless of nesting. */
+/**
+ * Walks a parsed slide XML tree collecting every <a:t> text-run value,
+ * regardless of nesting. Each <a:p> paragraph becomes its own line so the
+ * slide's title/bullet structure survives for the slide view.
+ */
 function collectPptxText(xml: string): string {
-  const out: string[] = [];
+  const lines: string[] = [];
+  let current: string[] = [];
   walk(xmlParser.parse(xml));
-  return out.join(' ');
+  flush();
+  return lines.join('\n');
+
+  function flush(): void {
+    const line = current.join('').replace(/\s+/g, ' ').trim();
+    if (line) lines.push(line);
+    current = [];
+  }
 
   function walk(node: unknown): void {
     if (node == null) return;
@@ -46,7 +61,13 @@ function collectPptxText(xml: string): string {
     if (typeof node === 'object') {
       for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
         if (key === 'a:t' && typeof value === 'string') {
-          out.push(value);
+          current.push(value);
+        } else if (key === 'a:p') {
+          // One paragraph per array entry (or a single object when there's only one).
+          for (const paragraph of Array.isArray(value) ? value : [value]) {
+            walk(paragraph);
+            flush();
+          }
         } else {
           walk(value);
         }
@@ -55,7 +76,14 @@ function collectPptxText(xml: string): string {
   }
 }
 
-async function extractPdf(buffer: Buffer): Promise<{ text: string; count: number }> {
+interface Extracted {
+  text: string;
+  count: number;
+  /** Text of each page/slide on its own, for the results' slide view. */
+  pages: string[];
+}
+
+async function extractPdf(buffer: Buffer): Promise<Extracted> {
   const parser = new PDFParse({ data: buffer });
   try {
     const result = await parser.getText();
@@ -64,13 +92,14 @@ async function extractPdf(buffer: Buffer): Promise<{ text: string; count: number
     // reviews before submitting. No documented option to suppress it, so
     // strip the fixed pattern instead.
     const text = result.text.replace(/\n*--\s*\d+\s*of\s*\d+\s*--\n*/g, '\n\n');
-    return { text, count: result.total };
+    const pages = result.pages.map((p) => p.text.trim());
+    return { text, count: result.total, pages };
   } finally {
     await parser.destroy();
   }
 }
 
-async function extractPptx(buffer: Buffer): Promise<{ text: string; count: number }> {
+async function extractPptx(buffer: Buffer): Promise<Extracted> {
   const zip = await JSZip.loadAsync(buffer);
   const slideFiles = Object.keys(zip.files)
     .filter((name) => /^ppt\/slides\/slide\d+\.xml$/.test(name))
@@ -84,14 +113,12 @@ async function extractPptx(buffer: Buffer): Promise<{ text: string; count: numbe
     throw new Error('No slides found in this file.');
   }
 
-  const slideTexts = await Promise.all(
-    slideFiles.map(async (name, i) => {
-      const xml = await zip.files[name]!.async('string');
-      return `Slide ${i + 1}\n${collectPptxText(xml).trim()}`;
-    }),
+  const pages = await Promise.all(
+    slideFiles.map(async (name) => collectPptxText(await zip.files[name]!.async('string'))),
   );
+  const text = pages.map((page, i) => `Slide ${i + 1}\n${page}`).join('\n\n');
 
-  return { text: slideTexts.join('\n\n'), count: slideFiles.length };
+  return { text, count: slideFiles.length, pages };
 }
 
 /**
@@ -138,7 +165,7 @@ extractRouter.post('/extract-text', requireAuth, extractLimiter, (req, res) => {
     }
 
     try {
-      const { text, count } = format === 'pdf' ? await extractPdf(file.buffer) : await extractPptx(file.buffer);
+      const { text, count, pages } = format === 'pdf' ? await extractPdf(file.buffer) : await extractPptx(file.buffer);
 
       const limit = format === 'pdf' ? MAX_PDF_PAGES : MAX_SLIDES;
       const unit = format === 'pdf' ? 'pages' : 'slides';
@@ -167,7 +194,7 @@ extractRouter.post('/extract-text', requireAuth, extractLimiter, (req, res) => {
         return;
       }
 
-      res.json({ text: trimmedText, count, format });
+      res.json({ text: trimmedText, count, format, pages });
     } catch (parseErr) {
       // eslint-disable-next-line no-console
       console.error('[lucida] file extraction failed:', parseErr instanceof Error ? parseErr.message : parseErr);

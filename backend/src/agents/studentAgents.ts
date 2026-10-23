@@ -191,6 +191,8 @@ export function collapsePasses(
         },
         reason: best.reason,
         stuckPoint: best.stuckPoint,
+        // Never undefined — Firestore rejects undefined fields when history is saved.
+        quote: ungrounded ? null : (best.quote ?? null),
         qaFlag: ungrounded ? 'ungrounded' : spread > 35 ? 'inconsistent' : null,
       });
     }

@@ -72,3 +72,15 @@
     animation: none;
   }
 }
+
+/* Slide view: a desktop-sized slide card squeezed onto a phone spends most
+   of its width on padding. */
+@media (max-width: 640px) {
+  .lucida-slide-card {
+    padding: 20px 22px !important;
+  }
+  .lucida-slide-title {
+    font-size: 20px !important;
+    line-height: 1.3 !important;
+  }
+}

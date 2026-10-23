@@ -1,4 +1,4 @@
-import type { Chunk } from './lesson.js';
+import type { Chunk, LessonSource } from './lesson.js';
 import type { DimensionId, Persona } from './persona.js';
 
 /** Qualitative band. Never a bare percentage — see Technical Design §4.5. */
@@ -31,6 +31,8 @@ export interface StudentAgentResult {
   confidence: ConfidenceRange;
   reason: string;
   stuckPoint: string | null;
+  /** Verbatim span of the chunk that drove this reaction, when one was grounded. Absent on older assessments. */
+  quote?: string | null;
   qaFlag: QaFlag | null;
 }
 
@@ -210,6 +212,8 @@ export interface Assessment {
   dimensionBreakdowns: DimensionBreakdown[];
   rubric: LessonRubric;
   qa: QaReport;
+  /** Present when the lesson was uploaded as a PDF/PPTX — powers the slide view. */
+  source?: LessonSource;
 }
 
 /** Result of re-running a single revised chunk (§4.7). */
