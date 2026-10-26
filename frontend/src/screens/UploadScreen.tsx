@@ -96,7 +96,12 @@ export function UploadScreen({
     try {
       const result = await extractText(file);
       setText(result.text);
-      setUpload({ source: { format: result.format, fileName: file.name, pages: result.pages }, file });
+      // An older backend doesn't send per-page text — then there's simply no slide view.
+      setUpload(
+        Array.isArray(result.pages) && result.pages.length > 0
+          ? { source: { format: result.format, fileName: file.name, pages: result.pages }, file }
+          : null,
+      );
       const unit = result.format === 'pdf' ? 'page' : 'slide';
       setUploadNote(
         `Extracted ${result.count} ${unit}${result.count === 1 ? '' : 's'} from "${file.name}" — review the text below before running the assessment.`,

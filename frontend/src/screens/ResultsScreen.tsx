@@ -52,7 +52,7 @@ export function ResultsScreen({
   onOpenChunk: (breakdown: ChunkBreakdown) => void;
   onReset: () => void;
 }) {
-  const hasSlides = (assessment.source?.pages.length ?? 0) > 0;
+  const hasSlides = (assessment.source?.pages?.length ?? 0) > 0;
   const slideTab = assessment.source?.format === 'pdf' ? 'Page view' : 'Slide view';
   const [view, setView] = useState(hasSlides ? slideTab : CHUNK_TAB);
 
